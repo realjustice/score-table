@@ -268,20 +268,21 @@ func (s *ScoreTable) createMemberScore(playerId int, round int) (*Score, error) 
 }
 
 func setRank(scores Scores) {
-	rank := 1
+	rank := 0
 	isSame := func(s1 *Score, s2 *Score) bool {
 		return s1.NBW == s2.NBW && s1.SOS == s2.SOS && s1.SOSOS == s2.SOSOS
 	}
 	var lastScore Score
 	for _, score := range scores {
-		score.Rank = rank
 		if isSame(&lastScore, score) {
+			score.Rank = rank
+			rank++
 			continue
 		}
+		rank++
+		score.Rank = rank
 
 		lastScore = *score
-
-		rank++
 	}
 }
 

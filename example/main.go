@@ -24,17 +24,17 @@ func main() {
 	// 9.TecchioPierre
 	// 10.VannierRémi
 
-	// Num  Name             NBW  SOS  SOSOS
-	//1     KunneStéphan      3   14   64
-	//2     BuffardEmmanuel   3   13   65
-	//3     GauthierHenri     3   13   65
-	//4     Papazoglou        3   13   64
-	//5     CancePhilippe     3   13   63
-	//6     KaradabanDenis    2   13   61
-	//7     ParcoitDavid      2   12   61
-	//8     Nguyen Huu_Phuoc  2   12   60
-	//9     TecchioPierre     2   11   61
-	//10    VannierRémi       2   11   61
+	// Num  Name             NBW  SOS  SOSOS RANK
+	//1     KunneStéphan      3   14   64      1
+	//2     BuffardEmmanuel   3   13   65      2
+	//3     GauthierHenri     3   13   65      2
+	//4     Papazoglou        3   13   64      4
+	//5     CancePhilippe     3   13   63      5
+	//6     KaradabanDenis    2   13   61      6
+	//7     ParcoitDavid      2   12   61      7
+	//8     Nguyen Huu_Phuoc  2   12   60      8
+	//9     TecchioPierre     2   11   61      9
+	//10    VannierRémi       2   11   61      9
 
 	// KunneStéphan
 	scoreTable.RecordResult(1, 1, 5, WHITE_WIN)
