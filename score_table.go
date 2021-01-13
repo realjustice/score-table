@@ -30,12 +30,14 @@ type Score struct {
 	NBW      float32
 	SOS      int
 	SOSOS    int
+	Rank     int
 }
 type Scores []*Score
 
 type Option struct {
 	bSOS    bool
 	bSOSOS  bool
+	bRank   bool
 	drawNBW float32
 }
 
@@ -65,6 +67,12 @@ func WithSOS() OptionFunc {
 func WithSOSOS() OptionFunc {
 	return func(option *Option) {
 		option.bSOSOS = true
+	}
+}
+
+func WithRank() OptionFunc {
+	return func(option *Option) {
+		option.bRank = true
 	}
 }
 
@@ -102,7 +110,7 @@ func (s *ScoreTable) RecordResult(round int, blackPlayerId int, whitePlayerId in
 	}
 	blackP := addMemberRoundScore(blackPlayerId, true)
 	whiteP := addMemberRoundScore(whitePlayerId, false)
-	blackP.AddOpponent(whiteP)
+	blackP.addOpponent(whiteP)
 
 	return nil
 }
@@ -208,7 +216,7 @@ func (s *playerRoundScore) addPlayerRoundScore(round int, score float32) *player
 	return newScore
 }
 
-func (m *playerRoundScore) AddOpponent(op *playerRoundScore) *playerRoundScore {
+func (m *playerRoundScore) addOpponent(op *playerRoundScore) *playerRoundScore {
 	m.op = op
 	op.op = m
 	return m
@@ -229,6 +237,10 @@ func (s *ScoreTable) GetScoreTableByRound(round int) Scores {
 	}
 
 	OrderedBy(NBW, SOS, SOSOS, PlayerId).Sort(scores)
+	// 设置排名
+	if s.bRank {
+		setRank(scores)
+	}
 
 	return scores
 }
@@ -253,6 +265,24 @@ func (s *ScoreTable) createMemberScore(playerId int, round int) (*Score, error) 
 	}
 
 	return &memberScore, nil
+}
+
+func setRank(scores Scores) {
+	rank := 1
+	isSame := func(s1 *Score, s2 *Score) bool {
+		return s1.NBW == s2.NBW && s1.SOS == s2.SOS && s1.SOSOS == s2.SOSOS
+	}
+	var lastScore Score
+	for _, score := range scores {
+		score.Rank = rank
+		if isSame(&lastScore, score) {
+			continue
+		}
+
+		lastScore = *score
+
+		rank++
+	}
 }
 
 func PrintNBW(m *playerRoundScore, id string, round int) {
