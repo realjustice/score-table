@@ -72,10 +72,13 @@ func main() {
 	// TecchioPierre
 	scoreTable.RecordResult(3, 9, 10, BLACK_WIN)
 
+	// 获取某一轮的对阵表
 	scores := scoreTable.GetScoreTableByRound(5)
-
-	scoreTable.GetPlayerScoreByRound(10, 5)
 	for _, score := range scores {
-		fmt.Printf("%+v\n", score)
+		fmt.Printf("选手Id:%d,NBW:%g ,SOS:%d ,SOSOS:%d \n", score.PlayerId, score.NBW, score.SOS, score.SOSOS)
 	}
+	fmt.Println("----------------------------------------------------------------------")
+	// 获取某一轮某人的成绩表
+	score, _ := scoreTable.GetPlayerScoreByRound(1, 5)
+	fmt.Printf("选手Id:%d,NBW:%g ,SOS:%d ,SOSOS:%d \n", score.PlayerId, score.NBW, score.SOS, score.SOSOS)
 }
