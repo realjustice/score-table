@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	. "score_table"
+	. "github.com/realjustice/score-table"
 )
 
 func main() {
