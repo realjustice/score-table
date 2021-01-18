@@ -42,8 +42,9 @@ type Option struct {
 }
 
 type playerRoundScore struct {
-	Round int     // 轮次
-	score float32 // 本轮得分
+	Round       int     // 轮次
+	score       float32 // 本轮得分
+	isByePlayer bool    // 是否是轮空选手
 
 	prev *playerRoundScore // 前驱
 	next *playerRoundScore // 后继
@@ -82,10 +83,11 @@ func WithDrawScore(drawNBW float32) OptionFunc {
 	}
 }
 
-func newPlayerRoundScore(round int, NBW float32) *playerRoundScore {
+func newPlayerRoundScore(round int, NBW float32, isByePlayer bool) *playerRoundScore {
 	var playerRoundScore playerRoundScore
 	playerRoundScore.score = NBW
 	playerRoundScore.Round = round
+	playerRoundScore.isByePlayer = isByePlayer
 
 	return &playerRoundScore
 }
@@ -102,9 +104,9 @@ func (s *ScoreTable) RecordResult(round int, blackPlayerId int, whitePlayerId in
 	addMemberRoundScore := func(playerId int, isBlack bool) *playerRoundScore {
 		score := calculateNBW(result, isBlack, s.drawNBW)
 		if mrs, ok := s.m[playerId]; ok {
-			return mrs.addPlayerRoundScore(round, score)
+			return mrs.addPlayerRoundScore(round, score, playerId == 0)
 		} else {
-			s.m[playerId] = &playerRoundScore{Round: round, score: score}
+			s.m[playerId] = newPlayerRoundScore(round, score, playerId == 0)
 			return s.m[playerId]
 		}
 	}
@@ -137,7 +139,10 @@ func (m *playerRoundScore) getSosByRound(round int) int {
 
 	sos := 0
 	for head != nil && head.Round <= round {
-		sos += head.getOpponentNBWByRound(round)
+		if !head.isByePlayer {
+			sos += head.getOpponentNBWByRound(round)
+		}
+
 		head = head.next
 	}
 
@@ -161,6 +166,7 @@ func (m *playerRoundScore) getSososByRound(round int) int {
 
 func (m *playerRoundScore) getOpponentNBWByRound(round int) int {
 	op := m.op
+
 	return int(op.getNBWByRound(round))
 }
 
@@ -180,9 +186,9 @@ func (m *playerRoundScore) getNBWByRound(round int) float32 {
 	return NBW
 }
 
-func (s *playerRoundScore) addPlayerRoundScore(round int, score float32) *playerRoundScore {
+func (s *playerRoundScore) addPlayerRoundScore(round int, score float32, isByePlayer bool) *playerRoundScore {
 	node := s
-	newScore := newPlayerRoundScore(round, score)
+	newScore := newPlayerRoundScore(round, score, isByePlayer)
 	// 回退到头节点
 	for node.prev != nil {
 		node = node.prev
@@ -233,7 +239,9 @@ func (s *ScoreTable) GetScoreTableByRound(round int) Scores {
 	// 遍历map，之后获取用户的memberScore
 	for k := range s.m {
 		score, _ := s.createMemberScore(k, round)
-		scores = append(scores, score)
+		if !s.m[k].isByePlayer {
+			scores = append(scores, score)
+		}
 	}
 
 	OrderedBy(NBW, SOS, SOSOS, PlayerId).Sort(scores)
@@ -273,13 +281,14 @@ func setRank(scores Scores) {
 		return s1.NBW == s2.NBW && s1.SOS == s2.SOS && s1.SOSOS == s2.SOSOS
 	}
 	var lastScore Score
+	sameCount := 0
 	for _, score := range scores {
 		if isSame(&lastScore, score) {
 			score.Rank = rank
-			rank++
+			sameCount++
 			continue
 		}
-		rank++
+		rank = rank + sameCount + 1
 		score.Rank = rank
 
 		lastScore = *score
