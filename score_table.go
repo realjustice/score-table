@@ -289,6 +289,7 @@ func setRank(scores Scores) {
 			continue
 		}
 		rank = rank + sameCount + 1
+		sameCount = 0
 		score.Rank = rank
 
 		lastScore = *score
