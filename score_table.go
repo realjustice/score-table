@@ -28,8 +28,8 @@ type ScoreTable struct {
 type Score struct {
 	PlayerId int
 	NBW      float32
-	SOS      int
-	SOSOS    int
+	SOS      float32
+	SOSOS    float32
 	Rank     int
 }
 type Scores []*Score
@@ -130,14 +130,14 @@ func calculateNBW(result int, isBlack bool, drawScore float32) float32 {
 }
 
 // 根据轮次获得对手分
-func (m *playerRoundScore) getSosByRound(round int) int {
+func (m *playerRoundScore) getSosByRound(round int) float32 {
 	head := m
 	// 回退到头节点
 	for head.prev != nil {
 		head = head.prev
 	}
 
-	sos := 0
+	var sos float32
 	for head != nil && head.Round <= round {
 		if !head.isByePlayer {
 			sos += head.getOpponentNBWByRound(round)
@@ -149,9 +149,9 @@ func (m *playerRoundScore) getSosByRound(round int) int {
 	return sos
 }
 
-func (m *playerRoundScore) getSososByRound(round int) int {
+func (m *playerRoundScore) getSososByRound(round int) float32 {
 	head := m
-	sosos := 0
+	var sosos float32
 	// 回到链表头部
 	for head.prev != nil {
 		head = head.prev
@@ -164,10 +164,10 @@ func (m *playerRoundScore) getSososByRound(round int) int {
 	return sosos
 }
 
-func (m *playerRoundScore) getOpponentNBWByRound(round int) int {
+func (m *playerRoundScore) getOpponentNBWByRound(round int) float32 {
 	op := m.op
 
-	return int(op.getNBWByRound(round))
+	return op.getNBWByRound(round)
 }
 
 func (m *playerRoundScore) getNBWByRound(round int) float32 {
