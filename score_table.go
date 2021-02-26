@@ -11,6 +11,8 @@ const (
 	BLACK_WIN = 1
 	DRAW      = 0
 	WHITE_WIN = -1
+	BOTH_LOSE = 2
+	BOTH_WIN  = 3
 )
 
 var (
@@ -95,7 +97,7 @@ func newPlayerRoundScore(round int, NBW float32, isByePlayer bool) *playerRoundS
 // recordResult
 func (s *ScoreTable) RecordResult(round int, blackPlayerId int, whitePlayerId int, result int) error {
 	// 判断map中是否存在，不存在则新增，如果存在，则以拉链的方式向后追加
-	if result != BLACK_WIN && result != WHITE_WIN && result != DRAW {
+	if result != BLACK_WIN && result != WHITE_WIN && result != DRAW && result != BOTH_LOSE && result != BOTH_WIN {
 		return ErrUnknownResult
 	}
 	if s.m == nil {
@@ -117,13 +119,17 @@ func (s *ScoreTable) RecordResult(round int, blackPlayerId int, whitePlayerId in
 	return nil
 }
 
-func calculateNBW(result int, isBlack bool, drawScore float32) float32 {
+func calculateNBW(result int, isBlack bool, drawScore float32) (score float32) {
 	if result == BLACK_WIN && isBlack {
-		return 1
+		score = 1
 	} else if result == WHITE_WIN && !isBlack {
-		return 1
+		score = 1
 	} else if result == DRAW {
-		return drawScore
+		score = drawScore
+	} else if result == BOTH_LOSE {
+		return 0
+	} else if result == BOTH_WIN {
+		score = 1
 	}
 
 	return 0
