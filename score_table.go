@@ -127,12 +127,12 @@ func calculateNBW(result int, isBlack bool, drawScore float32) (score float32) {
 	} else if result == DRAW {
 		score = drawScore
 	} else if result == BOTH_LOSE {
-		return 0
+		score = 0
 	} else if result == BOTH_WIN {
 		score = 1
 	}
 
-	return 0
+	return
 }
 
 // 根据轮次获得对手分
