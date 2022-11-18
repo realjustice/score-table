@@ -6,12 +6,7 @@ import (
 )
 
 func main() {
-
-	// WithRank() O(n)
-	// WithRank() WithSOS O(n)
-	// WithRank() WithSOS O(n^2)
-	// WithRank() WithSOSSOS O(n^3)
-	scoreTable := NewScoreTable(WithSOS(), WithSOSOS(), WithDrawScore(0.5), WithRank())
+	scoreTable := NewScoreTable(WithDrawNBW(0.5))
 	// players
 	// 1.KunneStéphan
 	// 2.BuffardEmmanuel
@@ -78,13 +73,8 @@ func main() {
 	scoreTable.RecordResult(3, 9, 10, BLACK_WIN)
 
 	// 获取某一轮的对阵表
-	scores := scoreTable.GetScoreTableByRound(5)
+	scores := scoreTable.GetScoreTableByRound(5, SOSM, SOS)
 	for _, score := range scores {
-		fmt.Printf("选手Id:%d,NBW:%g ,SOS:%d ,SOSOS:%d,Rank:%d \n", score.PlayerId, score.NBW, score.SOS, score.SOSOS, score.Rank)
+		fmt.Printf("选手Id:%d,NBW:%g ,SOS:%f ,SOSM:%f,SOSOS:%f,Rank:%d \n", score.PlayerId, score.NBW, score.SOS, score.SOSM, score.SOSOS, score.Rank)
 	}
-	fmt.Println("----------------------------------------------------------------------")
-
-	// 获取某一轮某人的成绩表（不包含rank）
-	score, _ := scoreTable.GetPlayerScoreByRound(1, 5)
-	fmt.Printf("选手Id:%d,NBW:%g ,SOS:%d ,SOSOS:%d", score.PlayerId, score.NBW, score.SOS, score.SOSOS)
 }

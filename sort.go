@@ -5,19 +5,23 @@ import "sort"
 type lessFunc func(p1, p2 *Score) bool
 
 var (
-	NBW = func(s1, s2 *Score) bool {
+	nbwFunc = func(s1, s2 *Score) bool {
 		return s1.NBW > s2.NBW
 	}
 
-	SOS = func(s1, s2 *Score) bool {
+	sosFunc = func(s1, s2 *Score) bool {
 		return s1.SOS > s2.SOS
 	}
 
-	SOSOS = func(s1, s2 *Score) bool {
+	sososFunc = func(s1, s2 *Score) bool {
 		return s1.SOSOS > s2.SOSOS
 	}
 
-	PlayerId = func(s1, s2 *Score) bool {
+	sosmFunc = func(s1, s2 *Score) bool {
+		return s1.SOSM > s2.SOSM
+	}
+
+	playerIdFunc = func(s1, s2 *Score) bool {
 		return s1.PlayerId < s2.PlayerId
 	}
 )

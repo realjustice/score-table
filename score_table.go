@@ -1,11 +1,13 @@
 package scoretable
 
 import (
-	"errors"
 	"fmt"
+	"math"
 )
 
 type playerScoreMap map[int]*playerRoundScore
+type OptionFunc func(*Option)
+type OrderFunc func(s *ScoreTable)
 
 const (
 	BLACK_WIN = 1
@@ -16,31 +18,76 @@ const (
 )
 
 var (
-	ErrUnknownResult = errors.New("unknown result")
-	ErrUnknownPlayer = errors.New("unknown player")
+	SOS = func(s *ScoreTable) {
+		o := Order{lessFunc: sosFunc, s: s}
+		o.s.bSOS = true
+		o.s.orders = append(o.s.orders, &o)
+	}
+
+	SOSM = func(s *ScoreTable) {
+		o := Order{lessFunc: sosmFunc, s: s}
+		o.s.bSOSM = true
+		o.s.orders = append(o.s.orders, &o)
+	}
+
+	SOSOS = func(s *ScoreTable) {
+		o := Order{lessFunc: sososFunc, s: s}
+		o.s.bSOSOS = true
+		o.s.orders = append(o.s.orders, &o)
+	}
+
+	playerId = func(s *ScoreTable) {
+		o := Order{lessFunc: playerIdFunc, s: s}
+		o.s.orders = append(o.s.orders, &o)
+	}
 )
 
-type OptionFunc func(*Option)
+func WithDrawNBW(drawNBW float32) OptionFunc {
+	return func(option *Option) {
+		option.drawNBW = drawNBW
+	}
+}
+
+func WithWinNBW(drawNBW float32) OptionFunc {
+	return func(option *Option) {
+		option.drawNBW = drawNBW
+	}
+}
+
+func WithLoseNBW(drawNBW float32) OptionFunc {
+	return func(option *Option) {
+		option.drawNBW = drawNBW
+	}
+}
 
 type ScoreTable struct {
 	m playerScoreMap
 	*Option
+	bSOS   bool
+	bSOSM  bool
+	bSOSOS bool
+	orders []*Order
 }
 
 type Score struct {
 	PlayerId int
 	NBW      float32
 	SOS      float32
+	SOSM     float32
 	SOSOS    float32
 	Rank     int
 }
 type Scores []*Score
 
 type Option struct {
-	bSOS    bool
-	bSOSOS  bool
-	bRank   bool
 	drawNBW float32
+	winNBW  float32
+	loseNBW float32
+}
+
+type Order struct {
+	lessFunc
+	s *ScoreTable // 反向索引scoretable
 }
 
 type playerRoundScore struct {
@@ -54,35 +101,11 @@ type playerRoundScore struct {
 }
 
 func NewScoreTable(options ...OptionFunc) *ScoreTable {
-	option := &Option{drawNBW: 0.5}
+	option := &Option{drawNBW: 0.5, winNBW: 1, loseNBW: 0}
 	for _, o := range options {
 		o(option)
 	}
 	return &ScoreTable{Option: option}
-}
-
-func WithSOS() OptionFunc {
-	return func(option *Option) {
-		option.bSOS = true
-	}
-}
-
-func WithSOSOS() OptionFunc {
-	return func(option *Option) {
-		option.bSOSOS = true
-	}
-}
-
-func WithRank() OptionFunc {
-	return func(option *Option) {
-		option.bRank = true
-	}
-}
-
-func WithDrawScore(drawNBW float32) OptionFunc {
-	return func(option *Option) {
-		option.drawNBW = drawNBW
-	}
 }
 
 func newPlayerRoundScore(round int, NBW float32, isByePlayer bool) *playerRoundScore {
@@ -170,6 +193,33 @@ func (m *playerRoundScore) getSososByRound(round int) float32 {
 	return sosos
 }
 
+func (m *playerRoundScore) getSosMByRound(round int) float32 {
+	head := m
+	// 回退到头节点
+	for head.prev != nil {
+		head = head.prev
+	}
+
+	min, max := float32(math.MaxFloat32), -float32(math.MaxFloat32)
+	var sos float32
+	for head != nil && head.Round <= round {
+		if !head.isByePlayer {
+			score := head.getOpponentNBWByRound(round)
+			if score < min {
+				min = score
+			}
+			if score > max {
+				max = score
+			}
+			sos += score
+		}
+
+		head = head.next
+	}
+
+	return sos - min - max
+}
+
 func (m *playerRoundScore) getOpponentNBWByRound(round int) float32 {
 	op := m.op
 
@@ -239,8 +289,12 @@ func (m *playerRoundScore) clone() *playerRoundScore {
 	return &newM
 }
 
-func (s *ScoreTable) GetScoreTableByRound(round int) Scores {
+func (s *ScoreTable) GetScoreTableByRound(round int, orders ...OrderFunc) Scores {
 	scores := make(Scores, 0)
+	orders = append(orders, playerId)
+	for _, o := range orders {
+		o(s)
+	}
 
 	// 遍历map，之后获取用户的memberScore
 	for k := range s.m {
@@ -250,17 +304,16 @@ func (s *ScoreTable) GetScoreTableByRound(round int) Scores {
 		}
 	}
 
-	OrderedBy(NBW, SOS, SOSOS, PlayerId).Sort(scores)
 	// 设置排名
-	if s.bRank {
-		setRank(scores)
+	lessFunctions := make([]lessFunc, 0)
+	for _, v := range s.orders {
+		lessFunctions = append(lessFunctions, v.lessFunc)
 	}
 
-	return scores
-}
+	OrderedBy(lessFunctions...).Sort(scores)
+	s.setRank(scores)
 
-func (s *ScoreTable) GetPlayerScoreByRound(playerId int, round int) (*Score, error) {
-	return s.createMemberScore(playerId, round)
+	return scores
 }
 
 func (s *ScoreTable) createMemberScore(playerId int, round int) (*Score, error) {
@@ -277,19 +330,35 @@ func (s *ScoreTable) createMemberScore(playerId int, round int) (*Score, error) 
 	if s.bSOSOS {
 		memberScore.SOSOS = playerRoundScore.getSososByRound(round)
 	}
+	if s.bSOSM {
+		memberScore.SOSM = playerRoundScore.getSosMByRound(round)
+	}
 
 	return &memberScore, nil
 }
 
-func setRank(scores Scores) {
+func (s *ScoreTable) setRank(scores Scores) {
 	rank := 0
-	isSame := func(s1 *Score, s2 *Score) bool {
-		return s1.NBW == s2.NBW && s1.SOS == s2.SOS && s1.SOSOS == s2.SOSOS
+	isSameFunc := func(s1 *Score, s2 *Score) bool {
+		isSame := s1.NBW == s2.NBW
+		if s.bSOS {
+			isSame = (s1.SOS == s2.SOS) && isSame
+		}
+
+		if s.bSOSOS {
+			isSame = (s1.SOSOS == s2.SOSOS) && isSame
+		}
+
+		if s.bSOSM {
+			isSame = (s1.SOSM == s2.SOSM) && isSame
+		}
+
+		return isSame
 	}
 	var lastScore Score
 	sameCount := 0
 	for _, score := range scores {
-		if isSame(&lastScore, score) {
+		if isSameFunc(&lastScore, score) {
 			score.Rank = rank
 			sameCount++
 			continue
