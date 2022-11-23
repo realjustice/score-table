@@ -18,6 +18,11 @@ const (
 )
 
 var (
+	nBW = func(s *ScoreTable) {
+		o := Order{lessFunc: nbwFunc, s: s}
+		o.s.orders = append(o.s.orders, &o)
+	}
+
 	SOS = func(s *ScoreTable) {
 		o := Order{lessFunc: sosFunc, s: s}
 		o.s.bSOS = true
@@ -43,18 +48,6 @@ var (
 )
 
 func WithDrawNBW(drawNBW float32) OptionFunc {
-	return func(option *Option) {
-		option.drawNBW = drawNBW
-	}
-}
-
-func WithWinNBW(drawNBW float32) OptionFunc {
-	return func(option *Option) {
-		option.drawNBW = drawNBW
-	}
-}
-
-func WithLoseNBW(drawNBW float32) OptionFunc {
 	return func(option *Option) {
 		option.drawNBW = drawNBW
 	}
@@ -291,8 +284,11 @@ func (m *playerRoundScore) clone() *playerRoundScore {
 
 func (s *ScoreTable) GetScoreTableByRound(round int, orders ...OrderFunc) Scores {
 	scores := make(Scores, 0)
-	orders = append(orders, playerId)
-	for _, o := range orders {
+	// 默认第一项排序是大分，最后一项是选手名
+	newOrders := []OrderFunc{nBW}
+	newOrders = append(newOrders, orders...)
+	newOrders = append(newOrders, playerId)
+	for _, o := range newOrders {
 		o(s)
 	}
 
