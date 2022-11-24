@@ -209,8 +209,12 @@ func (m *playerRoundScore) getSosMByRound(round int) float32 {
 
 		head = head.next
 	}
+	sosm := sos - min - max
+	if sosm < 0 {
+		sosm = 0.0
+	}
 
-	return sos - min - max
+	return sosm
 }
 
 func (m *playerRoundScore) getOpponentNBWByRound(round int) float32 {
