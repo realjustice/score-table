@@ -73,9 +73,9 @@ func main() {
 	scoreTable.RecordResult(3, 9, 10, BLACK_WIN)
 
 	// 获取某一轮的对阵表
-	order:=[]OrderFunc{SOS,SOSM}
-	scores := scoreTable.GetScoreTableByRound(1, order...)
+	order := []OrderFunc{SOS, SOSOS, CS}
+	scores := scoreTable.GetScoreTableByRound(4, order...)
 	for _, score := range scores {
-		fmt.Printf("选手Id:%d,NBW:%g ,SOS:%f ,SOSM:%f,SOSOS:%f,Rank:%d \n", score.PlayerId, score.NBW, score.SOS, score.SOSM, score.SOSOS, score.Rank)
+		fmt.Printf("选手Id:%d,NBW:%g ,SOS:%f ,SOSM:%f,SOSOS:%f,CS:%f,Rank:%d \n", score.PlayerId, score.NBW, score.SOS, score.SOSM, score.SOSOS, score.CS, score.Rank)
 	}
 }

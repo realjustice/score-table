@@ -41,6 +41,12 @@ var (
 		o.s.orders = append(o.s.orders, &o)
 	}
 
+	CS = func(s *ScoreTable) {
+		o := Order{lessFunc: csFunc, s: s}
+		o.s.bCS = true
+		o.s.orders = append(o.s.orders, &o)
+	}
+
 	playerId = func(s *ScoreTable) {
 		o := Order{lessFunc: playerIdFunc, s: s}
 		o.s.orders = append(o.s.orders, &o)
@@ -59,6 +65,7 @@ type ScoreTable struct {
 	bSOS   bool
 	bSOSM  bool
 	bSOSOS bool
+	bCS    bool
 	orders []*Order
 }
 
@@ -68,6 +75,7 @@ type Score struct {
 	SOS      float32
 	SOSM     float32
 	SOSOS    float32
+	CS       float32
 	Rank     int
 }
 type Scores []*Score
@@ -217,6 +225,21 @@ func (m *playerRoundScore) getSosMByRound(round int) float32 {
 	return sosm
 }
 
+func (m *playerRoundScore) getCsByRound(round int) float32 {
+	head := m
+	var cs float32
+	// 回到链表头部
+	for head.prev != nil {
+		head = head.prev
+	}
+	for head != nil && head.Round <= round {
+		cs += head.score
+		head = head.next
+	}
+
+	return cs
+}
+
 func (m *playerRoundScore) getOpponentNBWByRound(round int) float32 {
 	op := m.op
 
@@ -333,6 +356,9 @@ func (s *ScoreTable) createMemberScore(playerId int, round int) (*Score, error) 
 	if s.bSOSM {
 		memberScore.SOSM = playerRoundScore.getSosMByRound(round)
 	}
+	if s.bCS {
+		memberScore.CS = playerRoundScore.getCsByRound(round)
+	}
 
 	return &memberScore, nil
 }
@@ -351,6 +377,10 @@ func (s *ScoreTable) setRank(scores Scores) {
 
 		if s.bSOSM {
 			isSame = (s1.SOSM == s2.SOSM) && isSame
+		}
+
+		if s.bCS {
+			isSame = (s1.CS == s2.CS) && isSame
 		}
 
 		return isSame
@@ -380,12 +410,18 @@ func PrintNBW(m *playerRoundScore, id string, round int) {
 
 func PrintSOS(m *playerRoundScore, id string, round int) {
 	sos := m.getSosByRound(round)
-	info := fmt.Sprintf("选手：%s  当前轮次为：%d，当前Sos为：%d\n", id, round, sos)
+	info := fmt.Sprintf("选手：%s  当前轮次为：%d，当前Sos为：%f\n", id, round, sos)
 	fmt.Println(info)
 }
 
 func PrintSOSOS(m *playerRoundScore, id string, round int) {
 	sos := m.getSososByRound(round)
-	info := fmt.Sprintf("选手：%s  当前轮次为：%d，当前Sosos为：%d\n", id, round, sos)
+	info := fmt.Sprintf("选手：%s  当前轮次为：%d，当前Sosos为：%f\n", id, round, sos)
+	fmt.Println(info)
+}
+
+func PrintCs(m *playerRoundScore, id string, round int) {
+	cs := m.getSososByRound(round)
+	info := fmt.Sprintf("选手：%s  当前轮次为：%d，当前Cs为：%f\n", id, round, cs)
 	fmt.Println(info)
 }

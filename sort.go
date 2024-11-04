@@ -17,6 +17,10 @@ var (
 		return s1.SOSOS > s2.SOSOS
 	}
 
+	csFunc = func(s1, s2 *Score) bool {
+		return s1.CS > s2.CS
+	}
+
 	sosmFunc = func(s1, s2 *Score) bool {
 		return s1.SOSM > s2.SOSM
 	}
